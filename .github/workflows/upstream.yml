@@ -1,0 +1,55 @@
+name: Merge upstream branches
+on:
+  schedule:
+    - cron:  '* 6 * * *'
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Merge upstream
+        run: |
+          git config --global user.name 'harshithpabbati'
+          git config --global user.email 'pabbatiharshith@gmail.com'
+          git pull --unshallow
+          git checkout gh-pages
+          git remote add upstream https://github.com/publiclab/image-sequencer.git
+          git fetch upstream
+          git reset --hard upstream/main
+          npm run setup --force
+
+          grunt production
+
+          if [ ! -f CNAME ];
+          then
+            touch CNAME
+          fi
+          echo "beta.sequencer.publiclab.org" > CNAME
+
+          rm -R docs/
+          rm -R test/
+          rm CONTRIBUTING.md
+          rm index.js
+
+          cp src/ui/prepareDynamic.js prepareDynamic.js
+
+          rm -R src/
+          mkdir -p src/ui/
+          mv prepareDynamic.js src/ui/prepareDynamic.js
+
+          git add .
+          git add -f node_modules/jquery/
+          git add -f node_modules/bootstrap/
+          git add -f node_modules/imgareaselect/
+          git add -f node_modules/gifshot/
+          git add -f node_modules/downloadjs/
+          git add -f node_modules/selectize/
+          git add -f node_modules/font-awesome/
+          git add -f node_modules/bootstrap-colorpicker/
+          git add -f node_modules/opencv.js
+
+          git add -f dist/image-sequencer.js
+          git add -f dist/image-sequencer-ui.js
+
+          git commit --no-verify -m "update beta site"
+          git push -f
